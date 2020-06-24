@@ -47,7 +47,8 @@ class Handler(FileSystemEventHandler):
             return os.path.exists(a_file) and os.path.getsize(a_file) > 0
         except:
             return False
-
+          
+    @staticmethod
     def subdir_exist(sub_path):
         if (not os.path.exists(sub_path)):
             try:
