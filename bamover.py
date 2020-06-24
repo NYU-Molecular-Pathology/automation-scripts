@@ -32,14 +32,42 @@ class Watcher():
         try:
             while True:
                 time.sleep(5)
-        except:
+        except Exception as e:
             self.observer.stop()
-            logging.error("Error")
+            logging.error("Error: %s" %e.message)
 
         self.observer.join()
 
 
 class Handler(FileSystemEventHandler):
+
+    @staticmethod
+    def is_file_empty(a_file):
+        try:
+            return os.path.exists(a_file) and os.path.getsize(a_file) > 0
+        except:
+            return False
+
+    def subdir_exist(sub_path):
+        if (not os.path.exists(sub_path)):
+            try:
+                return os.system("echo '***' | sudo -S mkdir %s" % sub_path) == 0
+            except:
+                logging.error("failed to create subdirectory %s " % sub_path)
+        return True
+
+    @staticmethod
+    def rsync_bam_file(bam_file):
+        if Handler.is_file_empty(bam_file):
+            run_id = os.path.dirname(bam_file).split("/")[-1].replace("Auto_user_", "")
+            logging.info("RUN ID %s." % run_id)
+            # create sub directory if not already exists
+            dest_dir = os.path.join(PATHLAB_DIR, run_id)
+            Handler.subdir_exist(dest_dir)
+            rsync_cmd = "echo '***' | sudo -S rsync -thP %s %s" % (bam_file, dest_dir)
+            logging.info("rsync command %s" % rsync_cmd)
+            if (os.system(rsync_cmd) != 0):
+                logging.error("rsync %s failed : " % bam_file)
 
     @staticmethod
     def on_any_event(event):
@@ -51,24 +79,12 @@ class Handler(FileSystemEventHandler):
             if event.src_path.endswith(".bam") or event.src_path.endswith(".bam.bai"):
                 if "basecaller_results" not in event.src_path and "_tn_" not in event.src_path:
                     logging.info("Received created event - %s." % event.src_path)
-                    try:
-                        run_id = os.path.dirname(event.src_path).split("/")[-1].replace("Auto_user_", "")
-                        logging.info("RUN ID %s." % run_id)
-                        # create sub directory
-                        dest_dir = os.path.join(PATHLAB_DIR, run_id)
-                        if (not os.path.exists(dest_dir)):
-                            os.system("echo '***' | sudo -S mkdir %s"%dest_dir)
-                        rsync_cmd = "echo '***' | sudo -S rsync -thP %s %s"%(event.src_path,dest_dir)
-                        logging.info("rsync command %s"%rsync_cmd)
-                        if(os.system(rsync_cmd) != 0):
-                            logging.error("rsync %s failed : " % event.src_path)
-                    except:
-                        logging.error("failed to create new folder for %s " % run_id)
         elif event.event_type == 'modified':
             if event.src_path.endswith(".bam") or event.src_path.endswith(".bam.bai"):
                 if "basecaller_results" not in event.src_path and "_tn_" not in event.src_path:
                     # Taken any action here when a file is modified.
                     logging.info("Received modified event - %s." % event.src_path)
+                    Handler.rsync_bam_file(event.src_path)
 
 if __name__ == '__main__':
     directory_to_watch = sys.argv[1] if len(sys.argv) > 1 else '.'
