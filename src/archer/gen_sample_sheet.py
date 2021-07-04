@@ -1,3 +1,5 @@
+__author__ = "Kelsey Zhu"
+__version__ = "1.0.1"
 import pandas as pd
 import os
 import datetime
