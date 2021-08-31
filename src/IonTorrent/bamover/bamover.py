@@ -5,7 +5,7 @@ import logging
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-PATHLAB_DIR = '/mnt/Z_drive/acc_pathology/molecular/MOLECULAR/IonTorrent/Oncomine_Patient_Data'
+PATHLAB_DIR = '/mnt/Z_drive/MOLECULAR/IonTorrent/Oncomine_Patient_Data'
 LOG_DIR  = '/home/ionadmin/logs/'
 
 # set up logging
